@@ -1,5 +1,30 @@
 module RailsPulse
   module ChartHelper
+    # Main chart rendering method - unified API for all chart types
+    # Uses Stimulus controller to handle chart initialization
+    def render_stimulus_chart(data, type:, **options)
+      chart_id = options[:id] || "rails-pulse-chart-#{SecureRandom.hex(8)}"
+      height = options[:height] || "400px"
+      width = options[:width] || "100%"
+      theme = options[:theme] || "railspulse"
+      chart_options = options[:options] || {}
+
+      # Build data attributes for Stimulus
+      stimulus_data = {
+        controller: "rails-pulse--chart",
+        rails_pulse__chart_type_value: type,
+        rails_pulse__chart_data_value: data.to_json,
+        rails_pulse__chart_options_value: chart_options.to_json,
+        rails_pulse__chart_theme_value: theme
+      }
+
+      content_tag(:div, "",
+        id: chart_id,
+        style: "height: #{height}; width: #{width};",
+        data: stimulus_data
+      )
+    end
+
     # Base chart options shared across all chart types
     def base_chart_options(units: nil, zoom: false)
       {
@@ -97,16 +122,21 @@ module RailsPulse
 
     private
 
+    # Wraps JavaScript function strings for later processing
+    def js_function(func_string)
+      "__FUNCTION_START__#{func_string}__FUNCTION_END__"
+    end
+
     def apply_tooltip_formatter(options, tooltip_formatter)
       return unless tooltip_formatter.present?
 
-      options[:tooltip][:formatter] = RailsCharts.js(tooltip_formatter)
+      options[:tooltip][:formatter] = js_function(tooltip_formatter)
     end
 
     def apply_xaxis_formatter(options, xaxis_formatter)
       return unless xaxis_formatter.present?
 
-      options[:xAxis][:axisLabel] ||= { formatter: RailsCharts.js(xaxis_formatter) }
+      options[:xAxis][:axisLabel] ||= { formatter: js_function(xaxis_formatter) }
     end
 
     def apply_zoom_configuration(options, zoom, zoom_start, zoom_end, chart_data)
