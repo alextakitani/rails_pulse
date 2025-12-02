@@ -2,6 +2,7 @@ require "rails_pulse/version"
 require "rails_pulse/engine"
 require "rails_pulse/configuration"
 require "rails_pulse/cleanup_service"
+require "rails_pulse/tracker"
 
 module RailsPulse
   class << self

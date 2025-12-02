@@ -6,6 +6,17 @@ RailsPulse.configure do |config|
   # Enable or disable Rails Pulse
   config.enabled = true
 
+  # Use synchronous tracking in test environment for predictable test behavior
+  config.async = false if Rails.env.test?
+
+  # ====================================================================================================
+  #                                         DASHBOARD CONFIGURATION
+  # ====================================================================================================
+  # Mount dashboard in main app (true) or run separately (false)
+  # For production, it's recommended to run the dashboard as a separate process
+  # using: bundle exec rackup lib/rails_pulse_server.ru -p 3001
+  config.mount_dashboard = true
+
   # ====================================================================================================
   #                                               THRESHOLDS
   # ====================================================================================================

@@ -44,6 +44,7 @@
   - [Schema Loading](#schema-loading)
 - [Performance Impact](#performance-impact)
   - [Running Performance Benchmarks](#running-performance-benchmarks)
+- [Standalone Dashboard Deployment](#standalone-dashboard-deployment)
 - [Testing](#testing)
 - [Technology Stack](#technology-stack)
 - [Advantages Over Other Solutions](#advantages-over-other-solutions)
@@ -638,16 +639,14 @@ The schema file `db/rails_pulse_schema.rb` serves as your single source of truth
 
 ## Performance Impact
 
-Rails Pulse includes comprehensive performance monitoring with measurable overhead. Based on real benchmarking:
+Rails Pulse uses **fiber-based async tracking** for minimal performance overhead:
 
-- **Request overhead:** 5-6ms per request (includes database writes)
-- **Memory allocation:** ~830 KB per request (temporary, garbage collected)
-- **Job tracking overhead:** < 0.1ms per background job
-- **Relative impact:** 1-5% for typical requests (100-500ms)
+- **Request overhead:** ~0.1ms per request (data collection only)
+- **Database writes:** Non-blocking, handled in background fibers
+- **Memory allocation:** Minimal, ~200 KB per request (temporary)
+- **Thread safety:** Proper connection pooling with isolated database connections
 
-**Important:** The overhead is primarily from persisting tracking data to the database. For high-traffic production applications (> 10,000 RPM), consider using aggressive filtering, sampling, or a separate database.
-
-For detailed benchmarking methodology, optimization strategies, and how to measure Rails Pulse's impact on your specific application, see the **[Performance Impact Guide](docs/performance_impact.md)**.
+This is handled automatically and requires no configuration.
 
 ### Running Performance Benchmarks
 
@@ -671,7 +670,79 @@ bundle exec rake rails_pulse:benchmark:request_overhead
 bundle exec rake rails_pulse:benchmark:middleware
 ```
 
-See the **[Performance Impact Guide](docs/performance_impact.md)** for detailed instructions and interpreting results.
+## Standalone Dashboard Deployment
+
+For production environments, you can run the Rails Pulse dashboard as a standalone application, separate from your main Rails app. This provides several benefits:
+
+- **Dashboard remains accessible when main app is under heavy load**
+- **Separate resource allocation** for monitoring vs application
+- **Enhanced security** - isolate dashboard access from public app
+- **Independent scaling** - dashboard doesn't scale with app instances
+
+**Quick Setup:**
+
+```bash
+# Option 1: Set DATABASE_URL environment variable (recommended for production)
+export DATABASE_URL="postgresql://user:pass@host/db"
+bundle exec rackup lib/rails_pulse_server.ru -p 3001
+
+# Option 2: Use config/database.yml (recommended for development)
+# Looks for 'rails_pulse' connection, falls back to primary
+# No environment variable needed - automatically reads from config/database.yml
+bundle exec rackup lib/rails_pulse_server.ru -p 3001
+```
+
+**Healthcheck Endpoint:**
+
+The standalone server includes a `/health` endpoint that verifies database connectivity:
+
+```bash
+curl http://localhost:3001/health
+# Returns: {"status":"ok","mode":"dashboard","database":"connected","timestamp":"..."}
+```
+
+**Deployment Options:**
+
+1. **Separate subdomain (recommended):**
+   ```nginx
+   server {
+       server_name pulse.myapp.com;
+       location / {
+           proxy_pass http://localhost:3001;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+
+2. **Kamal Deployment:**
+   Deploy the dashboard as an accessory
+
+   ```yaml
+   # config/deploy.yml
+   accessories:
+     rails_pulse:
+       image: your-app-image  # Same image as your main app
+       host: your-server
+       cmd: bundle exec rackup lib/rails_pulse_server.ru -p 3001
+       env:
+         clear:
+           DATABASE_URL: "postgresql://user:pass@host/db"
+           RAILS_ENV: production
+           SECRET_KEY_BASE: <%= ENV.fetch("SECRET_KEY_BASE") %>
+       port: "3001:3001"
+       healthcheck:
+         path: /health
+         port: 3001
+         interval: 10s
+         timeout: 5s
+   ```
+
+**Note:** When running standalone, the dashboard is read-only and doesn't track its own requests (tracking is automatically disabled).
+
+For detailed deployment instructions, see [docs/deployment-modes.md](docs/deployment-modes.md).
 
 ## Testing
 
@@ -839,7 +910,6 @@ The gem is available as open source under the terms of the [MIT License](https:/
 <div align="center">
   <strong>Built with ❤️ for the Rails community</strong>
 
-  [Documentation](https://github.com/railspulse/rails_pulse/wiki) •
   [Issues](https://github.com/railspulse/rails_pulse/issues) •
-  [Contributing](CONTRIBUTING.md)
+  [Discussions](https://github.com/railspulse/rails_pulse/discussions)
 </div>
