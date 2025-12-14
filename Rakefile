@@ -12,7 +12,17 @@ task :verify_dummy_migrations do
   # Check if db/rails_pulse_migrate directory exists (separate database setup)
   if Dir.exist?("db/rails_pulse_migrate")
     gem_migrations = Dir["db/rails_pulse_migrate/*.rb"].map { |f| File.basename(f) }.sort
-    dummy_migrations = Dir["test/dummy/db/migrate/202501*.rb"].map { |f| File.basename(f) }.sort
+
+    # Get all RailsPulse migrations from dummy app (exclude dummy app's own migrations)
+    all_dummy_migrations = Dir["test/dummy/db/migrate/*.rb"].map { |f| File.basename(f) }
+
+    # Filter to only RailsPulse migrations (contain "rails_pulse" in name or match known patterns)
+    dummy_migrations = all_dummy_migrations.select do |m|
+      m.include?("rails_pulse") ||
+      m.include?("jobs") ||
+      m.include?("query") ||
+      m.include?("request_uuid")
+    end.sort
 
     missing = gem_migrations - dummy_migrations
 
