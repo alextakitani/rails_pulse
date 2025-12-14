@@ -9,22 +9,27 @@ load "rails/tasks/engine.rake"
 
 desc "Verify dummy app migrations are in sync with gem migrations"
 task :verify_dummy_migrations do
-  gem_migrations = Dir["db/rails_pulse_migrate/*.rb"].map { |f| File.basename(f) }.sort
-  dummy_migrations = Dir["test/dummy/db/migrate/202501*.rb"].map { |f| File.basename(f) }.sort
+  # Check if db/rails_pulse_migrate directory exists (separate database setup)
+  if Dir.exist?("db/rails_pulse_migrate")
+    gem_migrations = Dir["db/rails_pulse_migrate/*.rb"].map { |f| File.basename(f) }.sort
+    dummy_migrations = Dir["test/dummy/db/migrate/202501*.rb"].map { |f| File.basename(f) }.sort
 
-  missing = gem_migrations - dummy_migrations
+    missing = gem_migrations - dummy_migrations
 
-  if missing.any?
-    puts "\n❌ Dummy app is missing Rails Pulse migrations:"
-    missing.each { |m| puts "   • #{m}" }
-    puts "\nTo fix this, run:"
-    puts "  cd test/dummy"
-    puts "  rails generate rails_pulse:upgrade"
-    puts "  rails db:migrate RAILS_ENV=test"
-    puts "\nThen commit the new migration files."
-    exit 1
+    if missing.any?
+      puts "\n❌ Dummy app is missing Rails Pulse migrations:"
+      missing.each { |m| puts "   • #{m}" }
+      puts "\nTo fix this, run:"
+      puts "  cd test/dummy"
+      puts "  rails generate rails_pulse:upgrade"
+      puts "  rails db:migrate RAILS_ENV=test"
+      puts "\nThen commit the new migration files."
+      exit 1
+    else
+      puts "✅ Dummy app migrations are in sync with gem migrations"
+    end
   else
-    puts "✅ Dummy app migrations are in sync with gem migrations"
+    puts "✅ Dummy app migrations check skipped (single database setup)"
   end
 end
 
