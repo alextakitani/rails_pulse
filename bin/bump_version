@@ -41,11 +41,13 @@ fi
 
 NEW_VERSION="$1"
 
-# Validate version format (semantic versioning)
-if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+# Validate version format (semantic versioning with dots for pre-release)
+if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[a-zA-Z0-9.]+)?$ ]]; then
   echo -e "${RED}❌ Error: Invalid version format: $NEW_VERSION${NC}"
   echo "Expected format: MAJOR.MINOR.PATCH (e.g., 0.3.0)"
-  echo "Or with pre-release: MAJOR.MINOR.PATCH-TAG (e.g., 0.3.0-beta.1)"
+  echo "Or with pre-release: MAJOR.MINOR.PATCH.TAG (e.g., 0.3.0.pre.1, 0.3.0.beta.1)"
+  echo ""
+  echo "IMPORTANT: Use dots (.) not hyphens (-) for pre-release versions"
   exit 1
 fi
 

@@ -211,12 +211,21 @@ echo -e "Current version: ${YELLOW}$CURRENT_VERSION${NC}"
 echo ""
 
 # Ask for new version
+echo "Examples:"
+echo "  • Release: 0.3.0"
+echo "  • Pre-release: 0.3.0.pre.1, 0.3.0.beta.1, 0.3.0.rc.1"
+echo ""
+echo -e "${YELLOW}IMPORTANT: Use dots (.) not hyphens (-) for pre-release versions${NC}"
+echo ""
+
 while true; do
   read -p "Enter new version number: " NEW_VERSION
-  if [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+  if [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[a-zA-Z0-9]+)?$ ]]; then
     break
   else
-    echo -e "${RED}Invalid version format. Expected: MAJOR.MINOR.PATCH (e.g., 0.3.0)${NC}"
+    echo -e "${RED}Invalid version format.${NC}"
+    echo "Expected: MAJOR.MINOR.PATCH (e.g., 0.3.0)"
+    echo "Or: MAJOR.MINOR.PATCH.TAG (e.g., 0.3.0.pre.1)"
   fi
 done
 
