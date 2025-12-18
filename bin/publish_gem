@@ -64,13 +64,11 @@ echo ""
 echo -e "${BLUE}⚙️  Building gem...${NC}"
 gem build rails_pulse.gemspec
 
-# RubyGems converts hyphens to dots in version strings
-# e.g., "0.2.5-pre.1" becomes "0.2.5.pre.1" in the gem filename
-GEM_VERSION=$(echo "$VERSION" | tr '-' '.')
-GEM_FILE="rails_pulse-${GEM_VERSION}.gem"
+# Find the actual gem file that was built (RubyGems has complex naming rules)
+GEM_FILE=$(ls -t rails_pulse-*.gem 2>/dev/null | head -1)
 
-if [ ! -f "$GEM_FILE" ]; then
-  echo -e "${RED}❌ Error: Gem file not found: $GEM_FILE${NC}"
+if [ -z "$GEM_FILE" ] || [ ! -f "$GEM_FILE" ]; then
+  echo -e "${RED}❌ Error: No gem file found matching rails_pulse-*.gem${NC}"
   exit 1
 fi
 
