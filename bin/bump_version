@@ -49,14 +49,14 @@ if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
   exit 1
 fi
 
-# Get current version
+# Get current version (including pre-release suffix if present)
 VERSION_FILE="lib/rails_pulse/version.rb"
 if [ ! -f "$VERSION_FILE" ]; then
   echo -e "${RED}❌ Error: $VERSION_FILE not found${NC}"
   exit 1
 fi
 
-CURRENT_VERSION=$(grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' "$VERSION_FILE" | head -1)
+CURRENT_VERSION=$(grep 'VERSION = ' "$VERSION_FILE" | sed 's/.*VERSION = "\(.*\)".*/\1/')
 
 echo -e "${BLUE}📦 Rails Pulse Version Bump${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
