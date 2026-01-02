@@ -204,28 +204,62 @@ export default class extends Controller {
         return value
       },
 
-      // Timestamp formatter
-      'timestamp': (value) => {
-        if (typeof value === 'number' || typeof value === 'string') {
-          const date = new Date(value)
+      // Unix timestamp formatter (seconds since epoch)
+      // Converts to milliseconds for JavaScript Date
+      'unix_timestamp': (value) => {
+        const num = typeof value === 'string' ? Number(value) : value
+        if (!isNaN(num)) {
+          const date = new Date(num * 1000)
           return date.toLocaleString()
         }
         return value
       },
 
-      // Date only
-      'date': (value) => {
-        if (typeof value === 'number' || typeof value === 'string') {
-          const date = new Date(value)
+      // Unix timestamp to date only
+      'unix_date': (value) => {
+        const num = typeof value === 'string' ? Number(value) : value
+        if (!isNaN(num)) {
+          const date = new Date(num * 1000)
           return date.toLocaleDateString()
         }
         return value
       },
 
-      // Time only
+      // Unix timestamp to time only (hours)
+      'unix_time': (value) => {
+        const num = typeof value === 'string' ? Number(value) : value
+        if (!isNaN(num)) {
+          const date = new Date(num * 1000)
+          return date.getHours().toString().padStart(2, '0') + ':00'
+        }
+        return value
+      },
+
+      // Timestamp formatter (milliseconds - JavaScript native)
+      'timestamp': (value) => {
+        const num = typeof value === 'string' ? Number(value) : value
+        if (!isNaN(num)) {
+          const date = new Date(num)
+          return date.toLocaleString()
+        }
+        return value
+      },
+
+      // Date only (milliseconds - JavaScript native)
+      'date': (value) => {
+        const num = typeof value === 'string' ? Number(value) : value
+        if (!isNaN(num)) {
+          const date = new Date(num)
+          return date.toLocaleDateString()
+        }
+        return value
+      },
+
+      // Time only (milliseconds - JavaScript native)
       'time': (value) => {
-        if (typeof value === 'number' || typeof value === 'string') {
-          const date = new Date(value)
+        const num = typeof value === 'string' ? Number(value) : value
+        if (!isNaN(num)) {
+          const date = new Date(num)
           return date.toLocaleTimeString()
         }
         return value
@@ -261,16 +295,28 @@ export default class extends Controller {
       return SAFE_FORMATTERS.duration_ms
     }
 
-    if (formatterString.includes('toLocaleString')) {
-      return SAFE_FORMATTERS.number_delimited
-    }
+    // Check if this is a Unix timestamp formatter (uses * 1000 to convert to JS milliseconds)
+    const isUnixTimestamp = formatterString.includes('* 1000') || formatterString.includes('*1000')
 
     if (formatterString.includes('toLocaleDateString')) {
-      return SAFE_FORMATTERS.date
+      return isUnixTimestamp ? SAFE_FORMATTERS.unix_date : SAFE_FORMATTERS.date
     }
 
     if (formatterString.includes('toLocaleTimeString')) {
-      return SAFE_FORMATTERS.time
+      return isUnixTimestamp ? SAFE_FORMATTERS.unix_time : SAFE_FORMATTERS.time
+    }
+
+    // Check for hour formatting pattern (getHours with padStart)
+    if (formatterString.includes('getHours') && formatterString.includes('padStart')) {
+      return SAFE_FORMATTERS.unix_time
+    }
+
+    if (formatterString.includes('toLocaleString')) {
+      // toLocaleString without Date context is number formatting
+      if (formatterString.includes('new Date')) {
+        return isUnixTimestamp ? SAFE_FORMATTERS.unix_timestamp : SAFE_FORMATTERS.timestamp
+      }
+      return SAFE_FORMATTERS.number_delimited
     }
 
     // Default: return a safe identity function that just returns the value
